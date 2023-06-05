@@ -71,3 +71,36 @@ public class SpringBootReactorApplication {
 >
 > Métodos que devuelven un tipo Publisher (Mono, Flux) no deberían subscribirse(subscribe o block) porque ello
 > podría romper la cadena del publicador.
+
+## El método subscribe()
+
+Cuando hacemos el **subscribe()** empezamos a observar, por lo tanto, se trata de un consumidor, un **Observer** que
+consume cada elemento que emite el **Observable**. No solo puede consumir, sino también puede manejar cualquier tipo
+de error que pueda ocurrir.
+
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SpringBootReactorApplication.class);
+
+    /* other code */
+
+    @Bean
+    public CommandLineRunner run() {
+        return args -> {
+            Flux<String> nombres = Flux.just("Martín", "", "Candi", "Iselita")
+                    .doOnNext(name -> {
+                        if (name.isEmpty()) {
+                            throw new RuntimeException("Nombre no pueden ser vacíos");
+                        }
+                        System.out.println(name);
+                    });
+
+            nombres.subscribe(LOG::info, error -> LOG.error(error.getMessage()));
+        };
+    }
+
+}
+````
