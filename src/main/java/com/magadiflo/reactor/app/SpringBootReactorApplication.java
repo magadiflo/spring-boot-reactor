@@ -1,5 +1,6 @@
 package com.magadiflo.reactor.app;
 
+import com.magadiflo.reactor.app.models.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -20,16 +21,17 @@ public class SpringBootReactorApplication {
     @Bean
     public CommandLineRunner run() {
         return args -> {
-            Flux<String> nombres = Flux.just("Martín", "Lidia", "Candi", "Iselita")
-                    .doOnNext(name -> {
-                        if (name.isEmpty()) {
-                            throw new RuntimeException("Nombre no pueden ser vacíos");
+            Flux<User> users = Flux.just("Martín", "Lidia", "Candi", "Iselita")
+                    .map(name -> new User(name.toUpperCase(), null))
+                    .doOnNext(user -> {
+                        if (user == null) {
+                            throw new RuntimeException("Usuario no pueden ser null");
                         }
-                        System.out.println(name);
+                        System.out.println(user);
                     });
 
-            nombres.subscribe(
-                    LOG::info,
+            users.subscribe(
+                    user -> LOG.info(user.toString()),
                     error -> LOG.error(error.getMessage()),
                     new Runnable() {
                         @Override
