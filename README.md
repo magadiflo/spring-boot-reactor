@@ -104,3 +104,39 @@ public class SpringBootReactorApplication {
 
 }
 ````
+
+## El evento onComplete
+
+El evento onComplete se ejecuta solo si finaliza la emisión de todos los elementos del flujo. Si ocurre un error en el
+proceso, el evento onComplete no se ejecuta, sino el evento onError.
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+
+  /* other code */
+
+  @Bean
+  public CommandLineRunner run() {
+    return args -> {
+      Flux<String> nombres = Flux.just("Martín", "Lidia", "Candi", "Iselita")
+              .doOnNext(name -> {
+                if (name.isEmpty()) {
+                  throw new RuntimeException("Nombre no pueden ser vacíos");
+                }
+                System.out.println(name);
+              });
+
+      nombres.subscribe(
+              LOG::info,
+              error -> LOG.error(error.getMessage()),
+              new Runnable() {
+                @Override
+                public void run() {
+                  LOG.info("Ha finalizado la ejecución del observable con éxito!");
+                }
+              });
+    };
+  }
+}
+````
