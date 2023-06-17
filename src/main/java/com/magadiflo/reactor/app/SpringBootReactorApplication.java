@@ -21,8 +21,9 @@ public class SpringBootReactorApplication {
     @Bean
     public CommandLineRunner run() {
         return args -> {
-            Flux<User> users = Flux.just("Martín", "Lidia", "Candi", "Iselita")
-                    .map(name -> new User(name.toUpperCase(), null))
+            Flux<User> users = Flux.just("Martín Flores", "Liz Gonzales", "Candi Abanto", "Isela Pimentel", "Bruce Lee", "Bruce Willis")
+                    .map(name -> new User(name.split(" ")[0], name.split(" ")[1]))
+                    .filter(user -> user.getName().equalsIgnoreCase("Bruce"))
                     .doOnNext(user -> {
                         if (user == null) {
                             throw new RuntimeException("Usuario no pueden ser null");

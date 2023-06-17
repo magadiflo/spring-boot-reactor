@@ -198,3 +198,32 @@ public class SpringBootReactorApplication {
 
 }
 ````
+
+## El operador filter
+
+No permite filtrar valores, como parámetro recibe un predicate (función de valor booleano) de un argumento.
+
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+    /* omitted code */
+
+    @Bean
+    public CommandLineRunner run() {
+        return args -> {
+            Flux<User> users = Flux.just("Martín Flores", "Liz Gonzales", "Candi Abanto", "Isela Pimentel", "Bruce Lee", "Bruce Willis")
+                    .map(name -> new User(name.split(" ")[0], name.split(" ")[1]))
+                    .filter(user -> user.getName().equalsIgnoreCase("Bruce")) //<-- filtramos por el nombre "Bruce"
+                    .doOnNext(user -> {
+                        if (user == null) {
+                            throw new RuntimeException("Usuario no pueden ser null");
+                        }
+                        System.out.println(user);
+                    });
+
+            /* omitted code */
+        };
+    }
+}
+````
