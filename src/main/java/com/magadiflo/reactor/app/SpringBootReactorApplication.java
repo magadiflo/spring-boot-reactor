@@ -21,25 +21,12 @@ public class SpringBootReactorApplication {
     @Bean
     public CommandLineRunner run() {
         return args -> {
-            Flux<User> users = Flux.just("Martín Flores", "Liz Gonzales", "Candi Abanto", "Isela Pimentel", "Bruce Lee", "Bruce Willis")
-                    .map(name -> new User(name.split(" ")[0], name.split(" ")[1]))
-                    .filter(user -> user.getName().equalsIgnoreCase("Bruce"))
-                    .doOnNext(user -> {
-                        if (user == null) {
-                            throw new RuntimeException("Usuario no pueden ser null");
-                        }
-                        System.out.println(user);
-                    });
+            Flux<String> names = Flux.just("Martín Flores", "Liz Gonzales", "Candi Abanto", "Isela Pimentel", "Bruce Lee", "Bruce Willis");
 
-            users.subscribe(
-                    user -> LOG.info(user.toString()),
-                    error -> LOG.error(error.getMessage()),
-                    new Runnable() {
-                        @Override
-                        public void run() {
-                            LOG.info("Ha finalizado la ejecución del observable con éxito!");
-                        }
-                    });
+            Flux<User> users = names.map(name -> new User(name.split(" ")[0], name.split(" ")[1]))
+                    .filter(user -> user.getName().equalsIgnoreCase("Bruce"));
+
+            names.subscribe(LOG::info);
         };
     }
 

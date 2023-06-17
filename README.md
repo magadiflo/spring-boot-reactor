@@ -227,3 +227,33 @@ public class SpringBootReactorApplication {
     }
 }
 ````
+
+## Los observables son inmutables
+
+Una de las características que tienen los streams reactive es la inmutabilidad. Cuando tenemos un flujo de datos, y
+empezamos a usar operadores para transformar el flujo, no es que se vaya a cambiar el flujo original, sino que,
+se van creando nuevas instancias de flujos por cada nuevo operador que usemos.
+
+En el siguiente ejemplo obervamos un flujo original de Strings, al que le aplicamos posteriormente un map y un filter,
+ahora, nos subscribimos al flujo de Strings y vemos que los valores se mantienen tal cual.
+
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+
+    /* omitted code */
+
+  @Bean
+  public CommandLineRunner run() {
+    return args -> {
+      Flux<String> names = Flux.just("Martín Flores", "Liz Gonzales", "Candi Abanto", "Isela Pimentel", "Bruce Lee", "Bruce Willis");
+
+      Flux<User> users = names.map(name -> new User(name.split(" ")[0], name.split(" ")[1]))
+              .filter(user -> user.getName().equalsIgnoreCase("Bruce"));
+
+      names.subscribe(LOG::info);
+    };
+  }
+}
+````
