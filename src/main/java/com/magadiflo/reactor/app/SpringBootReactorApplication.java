@@ -1,6 +1,8 @@
 package com.magadiflo.reactor.app;
 
+import com.magadiflo.reactor.app.models.Comment;
 import com.magadiflo.reactor.app.models.User;
+import com.magadiflo.reactor.app.models.UserComment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -24,8 +26,27 @@ public class SpringBootReactorApplication {
     @Bean
     public CommandLineRunner run() {
         return args -> {
-            this.convertFluxToMonoList();
+            this.unitingUserAndCommentWithFlatMap();
         };
+    }
+
+    private void unitingUserAndCommentWithFlatMap() {
+        Mono<User> userMono = Mono.fromCallable(() -> new User("Rocky", "Balboa")); // Otra forma de crear un mono
+        Mono<Comment> commentMono = Mono.fromCallable(() -> {
+            Comment comment = new Comment();
+            comment.addComment("Hola Ivan, qué tal!");
+            comment.addComment("Cuando pactamos otra pelea?");
+            comment.addComment("me avisas, estaré pendiente, saludos.");
+            return comment;
+        });
+
+        // Usando flatMap - flatMap
+        Mono<UserComment> userCommentMonoFlatMapFlatMap = userMono.flatMap(user -> commentMono.flatMap(comment -> Mono.just(new UserComment(user, comment))));
+        userCommentMonoFlatMapFlatMap.subscribe(userComment -> LOG.info(userComment.toString()));
+
+        // Usando flatMap - Map
+        Mono<UserComment> userCommentMonoFlatMapMap = userMono.flatMap(user -> commentMono.map(comment -> new UserComment(user, comment)));
+        userCommentMonoFlatMapMap.subscribe(userComment -> LOG.info(userComment.toString()));
     }
 
     private void convertFluxToMonoList() {

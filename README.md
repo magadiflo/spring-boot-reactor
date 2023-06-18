@@ -347,6 +347,7 @@ public class SpringBootReactorApplication {
 
 En el ejemplo convertiremos un Flux de usuarios, a un mono de tipo List de usuario, es decir, en vez de que se emita
 cada elemento de la lista, vamos a emitir de una vez la lista completa.
+****
 
 ````java
 
@@ -366,3 +367,40 @@ public class SpringBootReactorApplication {
     }
 }
 ````
+
+## Combinando dos flujos con el operador flatMap
+
+La idea es tener dos streams (flujos) distintos, uno de usuarios y otro con sus comentarios, luego poder combinar estos
+dos flujos en uno solo utilizando **flatMap** y que el tipo del **flujo resultante sea usuarioConComentarios** de un
+tipo intermedio que combine ambos streams.
+
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+    private void unitingUserAndCommentWithFlatMap() {
+        Mono<User> userMono = Mono.fromCallable(() -> new User("Rocky", "Balboa")); // Otra forma de crear un mono
+        Mono<Comment> commentMono = Mono.fromCallable(() -> {
+            Comment comment = new Comment();
+            comment.addComment("Hola Ivan, qué tal!");
+            comment.addComment("Cuando pactamos otra pelea?");
+            comment.addComment("me avisas, estaré pendiente, saludos.");
+            return comment;
+        });
+
+        // 1° forma: Usando flatMap - flatMap
+        Mono<UserComment> userCommentMonoFlatMapFlatMap = userMono.flatMap(user -> commentMono.flatMap(comment -> Mono.just(new UserComment(user, comment))));
+        userCommentMonoFlatMapFlatMap.subscribe(userComment -> LOG.info(userComment.toString()));
+
+        // 2° forma: Usando flatMap - Map
+        Mono<UserComment> userCommentMonoFlatMapMap = userMono.flatMap(user -> commentMono.map(comment -> new UserComment(user, comment)));
+        userCommentMonoFlatMapMap.subscribe(userComment -> LOG.info(userComment.toString()));
+    }
+}
+````
+
+**En la primera forma** usamos el método estático **Mono.just(...)** para envolver el objeto **UserComment** en un mono,
+a diferencia de **map** que te **devuelve el objeto** directamente **sin envolver nada.** Podríamos ahorrarnos invocar
+el método just de Mono para envolver la clase, tan solo **usando un flatMap** descartando
+el segundo, **ya que la interfaz function** que recibe cómo parámetro el primer flatMap **ya nos dice que devolverá un
+mono**, **envolviendo "automáticamente"** nuestra clase UserComment.
