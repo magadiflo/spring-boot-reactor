@@ -26,12 +26,45 @@ public class SpringBootReactorApplication {
     @Bean
     public CommandLineRunner run() {
         return args -> {
-            this.unitingUserAndCommentWithFlatMap();
+            this.combinedZipWithForm2();
         };
     }
 
-    private void unitingUserAndCommentWithFlatMap() {
+    private void combinedZipWithForm2() {
         Mono<User> userMono = Mono.fromCallable(() -> new User("Rocky", "Balboa")); // Otra forma de crear un mono
+        Mono<Comment> commentMono = Mono.fromCallable(() -> {
+            Comment comment = new Comment();
+            comment.addComment("Hola Ivan, qué tal!");
+            comment.addComment("Cuando pactamos otra pelea?");
+            comment.addComment("me avisas, estaré pendiente, saludos.");
+            return comment;
+        });
+
+        Mono<UserComment> userCommentMono = userMono.zipWith(commentMono)
+                .map(tuple -> {
+                    User u = tuple.getT1();
+                    Comment c = tuple.getT2();
+                    return new UserComment(u, c);
+                });
+        userCommentMono.subscribe(userComment -> LOG.info(userComment.toString()));
+    }
+
+    private void combinedZipWithForm1() {
+        Mono<User> userMono = Mono.fromCallable(() -> new User("Rocky", "Balboa")); // Otra forma de crear un mono
+        Mono<Comment> commentMono = Mono.fromCallable(() -> {
+            Comment comment = new Comment();
+            comment.addComment("Hola Ivan, qué tal!");
+            comment.addComment("Cuando pactamos otra pelea?");
+            comment.addComment("me avisas, estaré pendiente, saludos.");
+            return comment;
+        });
+
+        Mono<UserComment> userCommentMono = userMono.zipWith(commentMono, UserComment::new);
+        userCommentMono.subscribe(userComment -> LOG.info(userComment.toString()));
+    }
+
+    private void combinedUserAndCommentWithFlatMap() {
+        Mono<User> userMono = Mono.fromCallable(() -> new User("Rocky", "Balboa"));
         Mono<Comment> commentMono = Mono.fromCallable(() -> {
             Comment comment = new Comment();
             comment.addComment("Hola Ivan, qué tal!");

@@ -378,7 +378,7 @@ tipo intermedio que combine ambos streams.
 
 @SpringBootApplication
 public class SpringBootReactorApplication {
-    private void unitingUserAndCommentWithFlatMap() {
+    private void combinedUserAndCommentWithFlatMap() {
         Mono<User> userMono = Mono.fromCallable(() -> new User("Rocky", "Balboa")); // Otra forma de crear un mono
         Mono<Comment> commentMono = Mono.fromCallable(() -> {
             Comment comment = new Comment();
@@ -404,3 +404,58 @@ a diferencia de **map** que te **devuelve el objeto** directamente **sin envolve
 el método just de Mono para envolver la clase, tan solo **usando un flatMap** descartando
 el segundo, **ya que la interfaz function** que recibe cómo parámetro el primer flatMap **ya nos dice que devolverá un
 mono**, **envolviendo "automáticamente"** nuestra clase UserComment.
+
+## Combinando dos flujos con el operador zipWith
+
+Con el operador zipWith combinamos dos streams como lo hicimos con el flatMap del ejemplo anterior:
+
+- Forma 1
+
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+    /* omitted code */
+    private void combinedZipWithForm1() {
+        Mono<User> userMono = Mono.fromCallable(() -> new User("Rocky", "Balboa"));
+        Mono<Comment> commentMono = Mono.fromCallable(() -> {
+            Comment comment = new Comment();
+            comment.addComment("Hola Ivan, qué tal!");
+            comment.addComment("Cuando pactamos otra pelea?");
+            comment.addComment("me avisas, estaré pendiente, saludos.");
+            return comment;
+        });
+
+        Mono<UserComment> userCommentMono = userMono.zipWith(commentMono, UserComment::new);
+        userCommentMono.subscribe(userComment -> LOG.info(userComment.toString()));
+    }
+}
+````
+
+- Forma 2
+
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+    /* omitted code */
+    private void combinedZipWithForm2() {
+        Mono<User> userMono = Mono.fromCallable(() -> new User("Rocky", "Balboa")); // Otra forma de crear un mono
+        Mono<Comment> commentMono = Mono.fromCallable(() -> {
+            Comment comment = new Comment();
+            comment.addComment("Hola Ivan, qué tal!");
+            comment.addComment("Cuando pactamos otra pelea?");
+            comment.addComment("me avisas, estaré pendiente, saludos.");
+            return comment;
+        });
+
+        Mono<UserComment> userCommentMono = userMono.zipWith(commentMono)
+                .map(tuple -> {
+                    User u = tuple.getT1();
+                    Comment c = tuple.getT2();
+                    return new UserComment(u, c);
+                });
+        userCommentMono.subscribe(userComment -> LOG.info(userComment.toString()));
+    }
+}
+````
