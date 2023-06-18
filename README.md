@@ -283,3 +283,36 @@ public class SpringBootReactorApplication {
     }
 }
 ````
+
+## El operador flatMap
+
+Con el flatMap, convertimos un dato a otro flujo (Mono o Flux) y por debajo, el **flatMap aplanará el flujo para
+convertir todos los flujos en uno solo.** La diferencia con el map es que con map trabajamos con datos como
+normalmente hemos venido trabajando, mientras que con flatMap, trabajamos con flujos.
+
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+
+    /* omitted code */
+
+    private void flatMapExample() {
+        List<String> namesList = List.of("Martín Flores", "Liz Gonzales", "Candi Abanto", "Isela Pimentel", "Bruce Lee", "Bruce Willis");
+        Flux<String> names = Flux.fromIterable(namesList);
+
+        Flux<User> users = names.map(name -> new User(name.split(" ")[0], name.split(" ")[1]))
+                .flatMap(user -> {
+                    if (user.getName().equalsIgnoreCase("bruce")) {
+                        return Mono.just(user);
+                    }
+                    return Mono.empty();
+                });
+
+        users.subscribe(user -> LOG.info(user.toString()));
+    }
+
+    /* omitted code */
+
+}
+````
