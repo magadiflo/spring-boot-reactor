@@ -342,3 +342,27 @@ public class SpringBootReactorApplication {
     }
 }
 ````
+
+## Convirtiendo un Observable Flux a Mono
+
+En el ejemplo convertiremos un Flux de usuarios, a un mono de tipo List de usuario, es decir, en vez de que se emita
+cada elemento de la lista, vamos a emitir de una vez la lista completa.
+
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+    private void convertFluxToMonoList() {
+        List<User> userList = List.of(
+                new User("Martín", "Flores"),
+                new User("Liz", "Gonzales"),
+                new User("Candi", "Abanto"),
+                new User("Isela", "Pimentel"),
+                new User("Bruce", "Lee"),
+                new User("Bruce", "Willis"));
+        Flux.fromIterable(userList)
+                .collectList()
+                .subscribe(users -> LOG.info(users.toString()));
+    }
+}
+````

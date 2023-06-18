@@ -24,8 +24,21 @@ public class SpringBootReactorApplication {
     @Bean
     public CommandLineRunner run() {
         return args -> {
-            this.fromUserToString();
+            this.convertFluxToMonoList();
         };
+    }
+
+    private void convertFluxToMonoList() {
+        List<User> userList = List.of(
+                new User("Martín", "Flores"),
+                new User("Liz", "Gonzales"),
+                new User("Candi", "Abanto"),
+                new User("Isela", "Pimentel"),
+                new User("Bruce", "Lee"),
+                new User("Bruce", "Willis"));
+        Flux.fromIterable(userList)
+                .collectList()
+                .subscribe(users -> LOG.info(users.toString()));
     }
 
     private void fromUserToString() {
