@@ -316,3 +316,29 @@ public class SpringBootReactorApplication {
 
 }
 ````
+
+## Convirtiendo un Flux List a un Flux String con operador map
+
+````java
+
+/* omitted code */
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+
+    private void fromUserToString() {
+        List<User> userList = List.of(
+                new User("Martín", "Flores"),
+                new User("Liz", "Gonzales"),
+                new User("Candi", "Abanto"),
+                new User("Isela", "Pimentel"),
+                new User("Bruce", "Lee"),
+                new User("Bruce", "Willis"));
+        Flux<User> users = Flux.fromIterable(userList);
+
+        Flux<String> names = users.map(user -> String.format("%s %s", user.getName(), user.getLastName()));
+
+        names.subscribe(LOG::info);
+    }
+}
+````

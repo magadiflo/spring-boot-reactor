@@ -24,8 +24,23 @@ public class SpringBootReactorApplication {
     @Bean
     public CommandLineRunner run() {
         return args -> {
-            this.flatMapExample();
+            this.fromUserToString();
         };
+    }
+
+    private void fromUserToString() {
+        List<User> userList = List.of(
+                new User("Martín", "Flores"),
+                new User("Liz", "Gonzales"),
+                new User("Candi", "Abanto"),
+                new User("Isela", "Pimentel"),
+                new User("Bruce", "Lee"),
+                new User("Bruce", "Willis"));
+        Flux<User> users = Flux.fromIterable(userList);
+
+        Flux<String> names = users.map(user -> String.format("%s %s", user.getName(), user.getLastName()));
+
+        names.subscribe(LOG::info);
     }
 
     private void flatMapExample() {
@@ -34,7 +49,7 @@ public class SpringBootReactorApplication {
 
         Flux<User> users = names.map(name -> new User(name.split(" ")[0], name.split(" ")[1]))
                 .flatMap(user -> {
-                    if(user.getName().equalsIgnoreCase("bruce")) {
+                    if (user.getName().equalsIgnoreCase("bruce")) {
                         return Mono.just(user);
                     }
                     return Mono.empty();
