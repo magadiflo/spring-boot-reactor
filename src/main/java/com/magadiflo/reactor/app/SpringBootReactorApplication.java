@@ -9,6 +9,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import reactor.core.publisher.Flux;
 
+import java.util.List;
+
 @SpringBootApplication
 public class SpringBootReactorApplication {
 
@@ -21,12 +23,13 @@ public class SpringBootReactorApplication {
     @Bean
     public CommandLineRunner run() {
         return args -> {
-            Flux<String> names = Flux.just("Martín Flores", "Liz Gonzales", "Candi Abanto", "Isela Pimentel", "Bruce Lee", "Bruce Willis");
+            List<String> namesList = List.of("Martín Flores", "Liz Gonzales", "Candi Abanto", "Isela Pimentel", "Bruce Lee", "Bruce Willis");
+            Flux<String> names = Flux.fromIterable(namesList);
 
             Flux<User> users = names.map(name -> new User(name.split(" ")[0], name.split(" ")[1]))
                     .filter(user -> user.getName().equalsIgnoreCase("Bruce"));
 
-            names.subscribe(LOG::info);
+            users.subscribe(user -> LOG.info(user.toString()));
         };
     }
 
