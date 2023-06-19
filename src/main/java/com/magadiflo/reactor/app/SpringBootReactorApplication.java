@@ -14,6 +14,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 @SpringBootApplication
 public class SpringBootReactorApplication {
@@ -27,8 +28,29 @@ public class SpringBootReactorApplication {
     @Bean
     public CommandLineRunner run() {
         return args -> {
-            this.delayElementsExample();
+            this.infiniteIntervalExample();
         };
+    }
+
+    private void infiniteIntervalExample() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        Flux.interval(Duration.ofSeconds(1))
+                .flatMap(i -> {
+                    if (i == 5) {
+                        return Flux.error(new InterruptedException("Solo hasta 5"));
+                    }
+                    return Flux.just(i);
+                })
+                .map(i -> "Hola " + i)
+                .retry(2)
+                .doOnTerminate(latch::countDown)
+                .subscribe(
+                        LOG::info,
+                        e -> LOG.error(e.getMessage())
+                );
+
+        latch.await();
     }
 
     private void delayElementsExample() {

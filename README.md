@@ -543,3 +543,57 @@ public class SpringBootReactorApplication {
     }
 }
 ````
+
+## Intervalos infinitos con interval y operador retry
+
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+    /* omitted code */
+    private void infiniteIntervalExample() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        Flux.interval(Duration.ofSeconds(1))
+                .flatMap(i -> {
+                    if (i == 5) {
+                        return Flux.error(new InterruptedException("Solo hasta 5"));
+                    }
+                    return Flux.just(i);
+                })
+                .map(i -> "Hola " + i)
+                .retry(2)
+                .doOnTerminate(latch::countDown)
+                .subscribe(
+                        LOG::info,
+                        e -> LOG.error(e.getMessage())
+                );
+
+        latch.await();
+    }
+}
+````
+
+**Explicación del código anterior**
+
+> Usamos el doOnTerminate en conjunto con el CountDownLatch para mantener el hilo corriendo hasta que termine, para que
+> se muestre en el terminal los datos del intervalo hasta 5, cuando llega a 5 interrumpimos el flujo con un exception y
+> un Flux.error para finalizar el flujo y asi se ejecute el doOnTerminate estableciendo el countDown a cero para que
+> libere el hilo. En resumen, el doOnTerminate permite liberar y soltar el proceso hasta que llega a 5, se lanza el
+> error y termina el bloqueo del CountDownLatch llegando a 0.
+
+**DONDE**
+
+- **CountDownLatch**, un CountDownLatch inicializado con una cuenta de uno sirve como un pestillo de encendido/apagado
+  simple, o puerta: todos los subprocesos que invocan await esperan en la puerta hasta que la abre un subproceso que
+  invoca a countDown. Un CountDownLatch se inicializa con un conteo dado. Los métodos await se bloquean hasta que el
+  recuento actual llega a cero debido a las invocaciones del método countDown, después de lo cual se liberan todos los
+  subprocesos en espera y cualquier invocación posterior de await regresa inmediatamente.
+- **countDown**, disminuye el conteo del latch, liberando todos los subprocesos en espera si el conteo llega a cero.
+- **await()**, hace que el subproceso actual espere hasta que el latch haya llegado a cero, a menos que se interrumpa el
+  subproceso.
+- **doOnTerminate()**, agrega el comportamiento (efecto secundario) que se activa cuando Flux finaliza, ya sea al
+  completarse correctamente o al fallar con un error.
+- **retry()**, se vuelve a suscribir a esta secuencia Flux si señala algún error, por un número fijo de veces. Tenga en
+  cuenta que pasar Long.MAX_VALUE se trata como un reintento infinito.
+
