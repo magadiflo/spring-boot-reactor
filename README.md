@@ -477,3 +477,69 @@ public class SpringBootReactorApplication {
     }
 }
 ````
+
+## Intervalos de tiempo con operador interval y zipWith
+
+**Interval:** Crea un flujo que emite valores largos que comiencen con 0 y se incrementen en intervalos de tiempo
+específicos en el temporizador global. El primer elemento se emite después de un retraso inicial igual al período.
+
+Si ejecutamos el código de abajo, al finalizar la ejecución **no veremos algún resultado en consola, ¿por qué?**,
+en realidad nuestro observable **se sigue ejecutando en segundo plano**, no se sale como lo hace nuestro **main()**,
+por eso es que no vemos resultados en consola, porque en realidad está ejecutándose de manera asíncrona en segundo
+plano, eso se debe precisamente al **interval**, al que aplicamos un retraso de prácticamente 12 segundos, mientras que
+en paralelo, el método **main()** se ejecutó y finalizó de inmediato.
+
+Recordar que una de las características de la programación reactiva es el de **ser sin bloqueo**, no bloquea los
+procesos y los flujos en la máquina virtual, se siguen ejecutando en distintos hilos, se ejecutan en paralelo.
+
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+    /* omitted code */
+    private void intervalExample() {
+        Flux<Integer> range = Flux.range(1, 12);
+        Flux<Long> delay = Flux.interval(Duration.ofSeconds(1));
+
+        range.zipWith(delay, (numRange, valDelay) -> numRange)
+                .doOnNext(integer -> LOG.info(integer.toString()))
+                .subscribe();
+    }
+
+}
+````
+
+Entonces, **¿cómo podríamos visualizar el delay?**. Bueno, tendríamos que forzar el flujo range para que sea con
+bloqueo (``no es recomendable bloquear, solo lo haremos para el ejemplo``). Usaremos el **blockLast()**, el cual
+se subscribe al flujo, pero lo bloquea hasta que se haya emitido el último elemento.
+
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+    private void intervalExample() {
+        Flux<Integer> range = Flux.range(1, 12);
+        Flux<Long> delay = Flux.interval(Duration.ofSeconds(1));
+
+        range.zipWith(delay, (numRange, valDelay) -> numRange)
+                .doOnNext(integer -> LOG.info(integer.toString()))
+                .blockLast(); // se subscribe al flujo, pero bloquea hasta que se haya emitido el último elemento
+    }
+}
+````
+
+Otra forma de aplicar intervalos de tiempo, usando **delayElements(...)**:
+
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+    private void delayElementsExample() {
+        Flux<Integer> range = Flux.range(1, 12)
+                .delayElements(Duration.ofSeconds(1))
+                .doOnNext(integer -> LOG.info(integer.toString()));
+
+        range.blockLast(); // se subscribe al flujo, pero bloquea hasta que se haya emitido el último elemento
+    }
+}
+````

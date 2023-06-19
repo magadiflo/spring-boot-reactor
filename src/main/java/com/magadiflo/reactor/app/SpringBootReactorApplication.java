@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Bean;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.util.List;
 
 @SpringBootApplication
@@ -26,8 +27,25 @@ public class SpringBootReactorApplication {
     @Bean
     public CommandLineRunner run() {
         return args -> {
-            this.zipWithAndRanges();
+            this.delayElementsExample();
         };
+    }
+
+    private void delayElementsExample() {
+        Flux<Integer> range = Flux.range(1, 12)
+                .delayElements(Duration.ofSeconds(1))
+                .doOnNext(integer -> LOG.info(integer.toString()));
+
+        range.blockLast();
+    }
+
+    private void intervalExample() {
+        Flux<Integer> range = Flux.range(1, 12);
+        Flux<Long> delay = Flux.interval(Duration.ofSeconds(1));
+
+        range.zipWith(delay, (numRange, valDelay) -> numRange)
+                .doOnNext(integer -> LOG.info(integer.toString()))
+                .blockLast(); // se subscribe al flujo, pero bloquea hasta el último elemento que se emita
     }
 
     private void zipWithAndRanges() {
