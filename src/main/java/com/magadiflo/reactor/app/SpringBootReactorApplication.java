@@ -26,8 +26,15 @@ public class SpringBootReactorApplication {
     @Bean
     public CommandLineRunner run() {
         return args -> {
-            this.combinedZipWithForm2();
+            this.zipWithAndRanges();
         };
+    }
+
+    private void zipWithAndRanges() {
+        Flux.just(1, 2, 3, 4) // numSequence
+                .map(number -> number * 2)
+                .zipWith(Flux.range(0, 4)/*numRange*/, (numSequence, numRange) -> String.format("[1] flux: %d, [2] flux: %d", numSequence, numRange))
+                .subscribe(LOG::info);
     }
 
     private void combinedZipWithForm2() {

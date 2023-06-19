@@ -459,3 +459,21 @@ public class SpringBootReactorApplication {
     }
 }
 ````
+
+## El operador range
+
+Nos permite crear un flux de un rango, ejemplo: ``Flux.range(0, 4)``. Los valores serían: ``0,1,2,3``.
+
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+    /* omitted code */
+    private void zipWithAndRanges() {
+        Flux.just(1, 2, 3, 4) // numSequence
+                .map(number -> number * 2)
+                .zipWith(Flux.range(0, 4)/*numRange*/, (numSequence, numRange) -> String.format("[1] flux: %d, [2] flux: %d", numSequence, numRange))
+                .subscribe(LOG::info);
+    }
+}
+````
