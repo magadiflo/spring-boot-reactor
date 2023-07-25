@@ -14,6 +14,8 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 
 @SpringBootApplication
@@ -28,8 +30,34 @@ public class SpringBootReactorApplication {
     @Bean
     public CommandLineRunner run() {
         return args -> {
-            this.infiniteIntervalExample();
+            this.infiniteIntervalExampleFromCreate();
         };
+    }
+
+    private void infiniteIntervalExampleFromCreate() {
+        Flux.create(emitter -> { //emitter, objeto que nos permite crear nuestro observable
+                    Timer timer = new Timer();
+                    timer.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            Integer randomNumber = (int) (Math.random() * 10 + 1);
+                            emitter.next(randomNumber);     // <-- (1) Emite los valores
+                            if (randomNumber.equals(5)) {
+                                timer.cancel();
+                                emitter.error(new InterruptedException("¡Error, se detuvo el flux por el 5!")); //<-- (2) Emite un error cancelando el Flux
+                            }
+                            if (randomNumber.equals(10)) {
+                                timer.cancel();
+                                emitter.complete();            // <-- (3) Finaliza la ejecución del Flux
+                            }
+                        }
+                    }, 1000, 1000);
+                })
+                .subscribe(
+                        next -> LOG.info(next.toString()),  // (1) Recibe los valores emitidos
+                        error -> LOG.error(error.getMessage()),      // (2) Recibe el error generado
+                        () -> LOG.info("¡Fín, se obtuvo 10!"));      // (3) Se ejecuta luego de que ha finalizado la ejecución del Flux
+
     }
 
     private void infiniteIntervalExample() throws InterruptedException {

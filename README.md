@@ -597,3 +597,49 @@ public class SpringBootReactorApplication {
 - **retry()**, se vuelve a suscribir a esta secuencia Flux si señala algún error, por un número fijo de veces. Tenga en
   cuenta que pasar Long.MAX_VALUE se trata como un reintento infinito.
 
+## El operador create para crear desde cero un Observable Flux
+
+Crearemos desde cero un Flux (Observable), emitiendo las tres opciones: **next, error, complete**. Para el ejemplo
+usaremos un generador de números aleatorios entre [1 - 10] incluyendo los extremos (en el tutorial usa un contador, pero
+yo quise variar el ejemplo). Cada 1 segundo se generará un número aleatorio y dependiendo del valor generado emitimos la
+tarea (next), lanzamos un error (error) o completamos la tarea (complete). En pocas palabras, **crearemos nuestro propio
+Observable usando el método create() del Flux:**
+
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+    /* omitted code */
+    private void infiniteIntervalExampleFromCreate() {
+        Flux.create(emitter -> { //emitter, objeto que nos permite crear nuestro observable
+                    Timer timer = new Timer();
+                    timer.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            Integer randomNumber = (int) (Math.random() * 10 + 1);
+                            emitter.next(randomNumber);     // <-- (1) Emite los valores
+                            if (randomNumber.equals(5)) {
+                                timer.cancel();
+                                emitter.error(new InterruptedException("¡Error, se detuvo el flux por el 5!")); //<-- (2) Emite un error cancelando el Flux
+                            }
+                            if (randomNumber.equals(10)) {
+                                timer.cancel();
+                                emitter.complete();            // <-- (3) Finaliza la ejecución del Flux
+                            }
+                        }
+                    }, 1000, 1000);
+                })
+                .subscribe(
+                        next -> LOG.info(next.toString()),           // (1) Recibe los valores emitidos
+                        error -> LOG.error(error.getMessage()),      // (2) Recibe el error generado
+                        () -> LOG.info("¡Fín, se obtuvo 10!"));      // (3) Se ejecuta luego de que ha finalizado la ejecución del Flux
+
+    }
+}
+````
+
+**DONDE**
+
+- **Timer**, nos ayudará a ejecutar la tarea cada 1000 milisegundos (1segundo).
+- **(1), (2) y (3)**, son las tres opciones que tiene nuestro Flux para poder emitir, lanzar error o completar la tarea.
+
