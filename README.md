@@ -643,3 +643,211 @@ public class SpringBootReactorApplication {
 - **Timer**, nos ayudará a ejecutar la tarea cada 1000 milisegundos (1segundo).
 - **(1), (2) y (3)**, son las tres opciones que tiene nuestro Flux para poder emitir, lanzar error o completar la tarea.
 
+## Manejando la contrapresión (backpressure)
+
+### Definiciones de contrapresión
+
+- Por defecto, cada vez que nos subscribimos a un observable **solicitamos la cantidad máxima que puede enviar el
+  productor,** es decir, le decimos al observable que envíe todos los elementos de una sola vez, pero el problema es que
+  si tenemos recursos limitados (hardware, software) podrían ser pesados, abrumador para el subscriptor que se
+  subscribe,
+  el que pueda procesar toda esa información de una sola vez, aquí es donde entra en juego la **contrapresión**, donde
+  **el Subscriptor le pueda indicar al Productor la cantidad de elementos que le tiene que enviar**, por ejemplo, en vez
+  de que envíe todos los elementos de una vez, que le envíe solo 5 elementos por lote (cada request que se haga).
+
+- **En la programación reactiva**, la capacidad del cliente para señalizar cuánto trabajo puede manejar **se llama
+  contrapresión.**
+
+- Un Observable muy rápido en combinación con un Observer lento puede resultar rápidamente en acumulación de ítems
+  sin consumir, que podrían devorar los recursos del sistema y resultar en una **OutOfMemoryException.** **Este problema
+  se conoce como backpressure o contrapresión.**
+
+- Es un mecanismo fundamental para manejar la comunicación entre dos componentes de un sistema que operan a diferentes
+  velocidades. Se utiliza principalmente en sistemas basados en streams o flujos de datos, como en el contexto de
+  programación reactiva o en sistemas de eventos.
+
+  En situaciones normales, cuando un emisor de datos produce información a una tasa más rápida de lo que el receptor
+  puede procesar, puede acumularse una gran cantidad de datos sin procesar en el receptor. Esto puede llevar a problemas
+  como
+  el agotamiento de recursos, retrasos significativos o incluso a la caída del sistema.
+
+  La contrapresión es una solución para evitar esta sobrecarga en el receptor. En lugar de simplemente ignorar o
+  descartar los datos adicionales cuando el receptor está sobrecargado, el emisor es notificado para que disminuya
+  temporalmente la producción de datos. De esta manera, el receptor puede "presionar hacia atrás" al emisor, indicándole
+  que se detenga o reduzca la tasa de emisión hasta que el receptor pueda manejar los datos entrantes.
+
+  Esto crea una especie de equilibrio dinámico entre el emisor y el receptor, **asegurando que ambos componentes
+  funcionen en armonía, evitando que el receptor se sobrecargue** y garantizando que los datos no se pierdan.
+
+### Ejemplo: Viendo el comportamiento por defecto
+
+Crearemos un Publisher (Observable) que emitirá un rango de números del 1 al 10. Haremos un subscribe de dicho
+observable para observar los elementos emitidos:
+
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+    /* omitted code */
+    private void backpressureExampleUsingSubscriber() {
+        Flux.range(1, 10)
+                .log()
+                .subscribe();
+    }
+}
+````
+
+El **log()** nos permite ver la traza completa de nuestro flux. Veremos cómo el subscriptor solicitará la máxima
+cantidad de elementos posibles, es decir, cuando hacemos **subscribe(), el observable nos retorna todos los elementos.**
+Si ejecutamos la aplicación veremos el resultado mencionado:
+
+![contrapresion-default.png](./assets/contrapresion-default.png)
+
+Ahora, modificaremos el ejemplo para poder observar el uso de la contrapresión:
+
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+    /* omitted code */
+    private void backpressureExampleUsingSubscriber() {
+        Flux.range(1, 10)
+                .log()
+                .subscribe(new Subscriber<Integer>() { // (1)
+                    private Subscription subscription;
+
+                    @Override
+                    public void onSubscribe(Subscription subscription) { // (2)
+                        this.subscription = subscription;
+                        this.subscription.request(Long.MAX_VALUE); // (3)
+                    }
+
+                    @Override
+                    public void onNext(Integer rangeNumber) {
+                        LOG.info(rangeNumber.toString()); // (4)
+                    }
+
+                    @Override
+                    public void onError(Throwable throwable) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
+    }
+}
+````
+
+**DONDE**
+
+- **(1)** el Subscriber es el Observador que requiere una suscripción.
+- **(1)** el ``<Integer>`` lo definimos de ese tipo porque ese es el tipo de dato que el observable emite.
+- **(2)** dentro de dicho método programamos la cantidad de datos que podemos pedirle al productor (Observable).
+- **(3)** con el ``request(...)`` le decimos que nos envíe la cantidad de elementos que podemos recibir.
+- **(3)** definimos dentro del request el ``Long.MAX_VALUE``, con esto le decimos que la cantidad de elementos que
+  podemos recibir sea la máxima, es decir todos los elementos. Este es el comportamiento por defecto, el mismo que
+  observamos en la superior.
+
+En el ejemplo anterior **estamos implementando al vuelo la interfaz Subscriber** con el que vamos a modificar el
+comportamiento por defecto del número de elementos que nos debe retornar el Observable. Sin embargo, aún, en el ejemplo
+anterior, estamos mostrando el comportamiento por defecto, es decir, el Observable emitirá todos los elementos de un
+solo tiro.
+
+Nuevamente, si volvemos a ejecutar, con esta nueva implementación que aún tiene las características de una
+implementación por defecto, obtendremos el siguiente resultado:
+
+![contrapresion-subscriber-default.png](./assets/contrapresion-subscriber-default.png)
+
+A diferencia de la primera imagen, en este segundo ejemplo vemos que se está imprimiendo los valores emitidos, esto es
+porque definimos un **LOG()** en el punto **(4)**. Pero lo relevante aquí es que estamos observando nuevamente el
+comportamiento por defecto, **se están emitiendo todos los valores de un solo request()**.
+
+### Ejemplo: Usando el Subscriber
+
+Lo que haremos será modificar el número de elementos que vamos a recibir (2 elementos por request) utilizando el
+**Subscriber**:
+
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+    /* omitted code */
+    private void backpressureExampleUsingSubscriber() {
+        Flux.range(1, 10)
+                .log()
+                .subscribe(new Subscriber<Integer>() {
+
+                    // Definiendo propiedades globales
+                    private Subscription subscription;
+                    private Integer limit = 2;
+                    private Integer consumed = 0;
+
+                    @Override
+                    public void onSubscribe(Subscription subscription) {// (1)
+                        this.subscription = subscription;
+                        this.subscription.request(this.limit);
+                    }
+
+                    @Override
+                    public void onNext(Integer rangeNumber) { // (2)
+                        LOG.info(rangeNumber.toString());
+                        this.consumed++;
+                        if (this.consumed.equals(this.limit)) {
+                            this.consumed = 0;
+                            this.subscription.request(this.limit);
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable throwable) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
+    }
+}
+````
+
+**DONDE**
+
+- **(1)** dentro del método **onSubscribe()** definimos la cantidad de elementos que vamos a recibir por request,
+  precisamente utilizando el método **request() del Subscription** definimos dicha cantidad. Para nuestro caso, serán
+  2 elementos por cada request que se haga.
+- **(2)** en el método **onNext()** recibimos los elementos que se van emitiendo. Además, hacemos una pequeña
+  validación, verificando la cantidad de elementos emitidos, para a continuación realizar un nuevo **request()** y
+  solicitar los próximos dos elementos. Notar que para hacer esa validación usamos una variable incrementadora que
+  verifica la cantidad de elementos emitidos.
+
+![contrapresion-modificando.png](./assets/contrapresion-modificando.png)
+
+Como observamos en la imagen anterior, se hace un **request()** solicitando 2 elementos, una vez que finaliza la emisión
+de los 2 elementos, se hace un nuevo request con los próximos 2 elementos, así sucesivamente hasta finalizar el flujo.
+
+### Ejemplo: Usando el operador limitRate()
+
+Usando el operador **limitRate()** podemos modificar el número de elementos que vamos a recibir (2 elementos por
+request):
+
+````java
+
+@SpringBootApplication
+public class SpringBootReactorApplication {
+    private void backpressureExampleUsingOperator() {
+        Flux.range(1, 10)
+                .log()
+                .limitRate(2) //<-- determina la cantidad de elementos a emitir por request
+                .subscribe();
+    }
+}
+````
+
+Si ejecutamos el ejemplo anterior, observaremos el mismo comportamiento que usando la interfaz **Subscriber**:
+
+![operator-limit-rate.png](./assets/operator-limit-rate.png)
