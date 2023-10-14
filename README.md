@@ -54,14 +54,24 @@ public class SpringBootReactorApplication {
 }
 ````
 
+**DONDE**
+
+- `Flux`, es un publisher, por lo tanto, un observable. Emite una secuencia asíncrona de 0 a N elementos **(onNext)**
+  y termina con una señal **(onComplete)**. También puede terminar con una seña **(onError)**.
+- En el código anterior estamos creando un `Flux de Strings`.
+- No sucederá nada hasta que nos subscribamos `.subscribe()`.
+- `.doOnNext()`, es una especie de callback que se ejecuta cuando un Publisher emite un elemento, pero no afecta el
+  flujo, es decir, devuelve el publicador original inmediatamente.
+
 **NOTA**
 
-- **Flux**, es un publisher, por lo tanto un observable. Emite una secuencia asíncrona de 0 a N elementos **(onNext)** y
-  termina con una señal **(onComplete)**. También puede terminar con una seña **(onError)**.
-- Creamos un Flux de Strings.
-- No sucederá nada hasta que nos subscribamos (.subscribe()).
-- **.doOnNext()**, es una especie de callback que se ejecuta cuando un Publisher emite un elemento, pero no afecta el
-  flujo, es decir, devuelve el publicador original inmediatamente.
+- `Mono` y `Flux` son implementaciones de la interfaz `Publisher`.
+- `Mono` es un tipo especial de `Publisher`. Un objeto Mono representa un valor único o vacío. Esto significa que sólo
+  puede emitir un valor como máximo para la petición onNext() y luego termina con la señal onComplete(). En caso de
+  fallo, sólo emite una única señal onError().
+- `Flux` es un `Publisher` estándar que representa de 0 a N valores de secuencia asíncrona. Esto significa que puede
+  emitir de 0 a muchos valores, posiblemente valores infinitos para peticiones onNext(), y luego termina con una señal
+  de finalización o de error.
 
 **IMPORTANTE**
 > Como estamos iniciando en el aprendizaje de programación reactiva, estamos usando el método ``.subscribe()``, pero
@@ -69,7 +79,7 @@ public class SpringBootReactorApplication {
 > llamen a las API Rest por ejemplo, o como más adelante usaremos el mismo Thymeleaf, será quien haga el
 > subscribe() para desencadenar la ejecución.
 >
-> Métodos que devuelven un tipo Publisher (Mono, Flux) no deberían subscribirse(subscribe o block) porque ello
+> Métodos que devuelven un tipo `Publisher (Mono, Flux)` no deberían subscribirse(subscribe o block) porque ello
 > podría romper la cadena del publicador.
 
 ## El método subscribe()
