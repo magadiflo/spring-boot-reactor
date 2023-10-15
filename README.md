@@ -2,14 +2,14 @@
 
 Proyecto realizado en el curso de **Programación Reactiva con Spring Boot y Spring WebFlux** de Andrés Guzmán (Udemy)
 
-### Reactive Streams
+### [Reactive Streams](https://www.reactive-streams.org/)
 
-Reactive Streams es una iniciativa para proporcionar un estándar para el procesamiento asíncrono de flujos con
-contrapresión sin bloqueo. ``Es la especificación para la programación reactiva``.
+Reactive Streams es una iniciativa para proporcionar un **estándar para el procesamiento asíncrono de flujos con
+contrapresión sin bloqueo.** ``Es la especificación para la programación reactiva``.
 
-### Project Reactor
+### [Project Reactor](https://projectreactor.io/)
 
-Reactor es una biblioteca reactiva de cuarta generación, **basada en la especificación Reactive Streams**, para crear
+Reactor es una biblioteca reactiva de cuarta generación, basada en la `especificación Reactive Streams`, para crear
 aplicaciones sin bloqueo en la JVM.``Es la implementación.``
 
 Si hacemos una analogía, Reactive Streams es a JPA como Project Reactor es a Hibernate, en pocas palabras, son la
